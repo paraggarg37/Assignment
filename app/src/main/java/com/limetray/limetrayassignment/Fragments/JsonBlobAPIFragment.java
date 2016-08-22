@@ -2,12 +2,19 @@ package com.limetray.limetrayassignment.Fragments;
 
 
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.database.ContentObserver;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -18,6 +25,7 @@ import com.limetray.limetrayassignment.Api.JsonBlobApiClient;
 import com.limetray.limetrayassignment.Interfaces.ExpenseData;
 import com.limetray.limetrayassignment.Interfaces.RestCallback;
 import com.limetray.limetrayassignment.Models.Expenses;
+import com.limetray.limetrayassignment.MyProvider;
 import com.limetray.limetrayassignment.R;
 
 
@@ -33,8 +41,9 @@ public class JsonBlobAPIFragment extends Fragment {
 
     private ExpenseData expenseDataFragment = null;
     private Expenses currentExpenses = null;
-    ProgressBar mProgressBar;
     boolean mReady = false;
+    private Context appContext;
+    private ContentObserver mObserver;
 
 
     @Override
@@ -43,12 +52,34 @@ public class JsonBlobAPIFragment extends Fragment {
 
         //retain the fragment
         setRetainInstance(true);
+        ContentResolver mResolver;
+        mResolver = getActivity().getContentResolver();
+        appContext =  getActivity().getApplicationContext();
+
+        mObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
+            public void onChange(boolean selfChange) {
+                // Do something.
+
+                SharedPreferences prefs =appContext.getSharedPreferences("data", Context.MODE_PRIVATE);
+                String restoredText = prefs.getString("data", null);
+                Log.d("fr","data changed" +restoredText);
+                if(restoredText!=null){
+                    Gson gson = new GsonBuilder().setDateFormat(DATETIME_FORMAT).create();
+                    Expenses p = gson.fromJson(restoredText, Expenses.class);
+                    setCurrentExpenses(p);
+                }
+
+            }
+        };
+        mResolver.registerContentObserver(MyProvider.CONTENT_URI,true,mObserver);
+
 
     }
 
     public void setExpenseDataFragment(ExpenseData fm){
         expenseDataFragment = fm;
     }
+
 
     public void getJsonBlob() {
         JsonBlobApiClient.get(JSON_BLOB_OBJECT_ID, new RestCallback() {
@@ -115,6 +146,7 @@ public class JsonBlobAPIFragment extends Fragment {
     public void init(){
         if(mReady){
 
+
             if(getCurrentExpenses()==null)
                 getJsonBlob();
             updateDataToActivity();
@@ -123,7 +155,9 @@ public class JsonBlobAPIFragment extends Fragment {
 
 
     public void updateDataToActivity(){
-        if(getCurrentExpenses()!=null && expenseDataFragment!=null){
+
+        if(getCurrentExpenses()!=null && expenseDataFragment!=null && mReady){
+            System.out.println("updating to activity");
             expenseDataFragment.onGetExpense(getCurrentExpenses());
         }
     }

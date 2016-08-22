@@ -6,4 +6,5 @@
     <string name="verified_msg">Marked Verified</string>
     <string name="fraud_msg">Marked Fraud</string>
     <string name="unverified_msg">Marked Unverified</string>
+    <string name="account_type">com.myapp.account</string>
 </resources>

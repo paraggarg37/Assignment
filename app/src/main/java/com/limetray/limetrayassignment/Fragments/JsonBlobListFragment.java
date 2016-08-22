@@ -1,11 +1,25 @@
 package com.limetray.limetrayassignment.Fragments;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.content.BroadcastReceiver;
+import android.content.ContentProvider;
+import android.content.ContentResolver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.database.ContentObserver;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +32,7 @@ import com.google.gson.GsonBuilder;
 import com.limetray.limetrayassignment.Adapters.ExpensesAdapter;
 import com.limetray.limetrayassignment.Interfaces.ExpenseData;
 import com.limetray.limetrayassignment.Models.Expenses;
+import com.limetray.limetrayassignment.MyProvider;
 import com.limetray.limetrayassignment.R;
 
 import java.util.ArrayList;
@@ -36,6 +51,28 @@ public class JsonBlobListFragment extends Fragment implements ExpenseData {
     protected ArrayList<Expenses.data> mExpenses;
     protected ProgressBar mProgressBar;
     protected TextView mEmptyView;
+
+
+    public static final String AUTHORITY = "com.example.android.datasync.provider";
+    // Account
+    public static final String ACCOUNT = "default_account";
+    // Sync interval constants
+    public static final long SECONDS_PER_MINUTE = 1L;
+    public static final long SYNC_INTERVAL_IN_MINUTES = 1L;
+    public static final long SYNC_INTERVAL =
+            SYNC_INTERVAL_IN_MINUTES *
+                    SECONDS_PER_MINUTE;
+
+    final String ACCOUNT_NAME = "MyApp";
+    final String ACCOUNT_TYPE = "com.myapp.account";
+    final String PROVIDER = "com.myapp.provider";
+
+
+
+
+    // Global variables
+    // A content resolver for accessing the provider
+    ContentResolver mResolver;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -74,7 +111,39 @@ public class JsonBlobListFragment extends Fragment implements ExpenseData {
 
         ApiFragment.setExpenseDataFragment(this);
 
+        Account appAccount = new Account(ACCOUNT_NAME,ACCOUNT_TYPE);
+        AccountManager accountManager = AccountManager.get(getActivity().getApplicationContext());
+        if (accountManager.addAccountExplicitly(appAccount, null, null)) {
+            ContentResolver.setIsSyncable(appAccount, PROVIDER, 1);
+            ContentResolver.setMasterSyncAutomatically(true);
+            ContentResolver.setSyncAutomatically(appAccount, PROVIDER, true);
+        }
+
+        mResolver = getActivity().getContentResolver();
+
+
+
+        Bundle settingsBundle = new Bundle();
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_MANUAL, true);
+        settingsBundle.putBoolean(
+                ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+        ContentResolver.requestSync(appAccount, AUTHORITY, settingsBundle);
+
+
+        mResolver.setIsSyncable(appAccount, AUTHORITY, 1);
+        mResolver.setSyncAutomatically(appAccount, AUTHORITY, true);
+
+        mResolver.addPeriodicSync(
+                appAccount,
+                AUTHORITY,
+                Bundle.EMPTY,
+                SYNC_INTERVAL);
+
+
     }
+
+
 
 
     @Override
