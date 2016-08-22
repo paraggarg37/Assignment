@@ -1,22 +1,9 @@
 package com.limetray.limetrayassignment.Api;
 
 import com.limetray.limetrayassignment.Interfaces.RestCallback;
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.MySSLSocketFactory;
-import com.loopj.android.http.RequestParams;
+
 
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-import cz.msebera.android.httpclient.conn.ssl.SSLSocketFactory;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;

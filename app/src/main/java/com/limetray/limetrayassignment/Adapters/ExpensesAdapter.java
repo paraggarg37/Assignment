@@ -18,11 +18,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.limetray.limetrayassignment.Interfaces.ExpenseData;
+import com.limetray.limetrayassignment.MainActivity;
 import com.limetray.limetrayassignment.Models.Expenses;
 import com.limetray.limetrayassignment.R;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by PG on 21/08/16.
@@ -30,6 +33,10 @@ import java.util.List;
 public class ExpensesAdapter extends RecyclerView.Adapter<ExpensesAdapter.MyViewHolder> {
 
     private ArrayList<Expenses.data> expensesList;
+    private HashMap<String,Expenses.data> dataMap;
+
+    private static String filterBy = MainActivity.CONSTANT_ALL;
+
     private Context mContext = null;
 
     public static final String CONSTANT_VERIFIED = "VERIFIED";
@@ -102,9 +109,16 @@ public class ExpensesAdapter extends RecyclerView.Adapter<ExpensesAdapter.MyView
     }
 
     public ExpensesAdapter(ArrayList<Expenses.data> data, Context context,ExpenseData callback) {
-        this.expensesList = data;
+        this.expensesList = (ArrayList<Expenses.data>) data.clone();
         this.mContext = context;
         this.expenseDataCallback = callback;
+
+        dataMap = new HashMap<>();
+        for(Expenses.data d : expensesList){
+            dataMap.put(d.getId(),d);
+        }
+
+        filter(filterBy);
     }
 
 
@@ -150,10 +164,38 @@ public class ExpensesAdapter extends RecyclerView.Adapter<ExpensesAdapter.MyView
             verified.setImageDrawable(getVerifiedDrawable(data.getState()));
             block.setImageDrawable(getFraudDrawable(data.getState()));
             time.setText(data.getTime());
-            expenseDataCallback.onUpdateExpense(expensesList);
-            System.out.println("clicked");
+
+            updateDataToServer();
 
         }
+    }
+
+    public void updateDataToServer(){
+
+        HashMap<String,Expenses.data> temp = new HashMap<>();
+
+        for(Expenses.data d : expensesList){
+            temp.put(d.getId(),d);
+        }
+
+        for (HashMap.Entry<String, Expenses.data> entry : dataMap.entrySet()) {
+            String key = entry.getKey();
+            Expenses.data value = entry.getValue();
+            if(!temp.containsKey(key)){
+                temp.put(key,value);
+            }
+        }
+
+        dataMap = (HashMap<String, Expenses.data>) temp.clone();
+
+        ArrayList<Expenses.data> tmpArrayList = new ArrayList<>();
+
+        for (HashMap.Entry<String, Expenses.data> entry : dataMap.entrySet()) {
+            Expenses.data value = entry.getValue();
+            tmpArrayList.add(value);
+        }
+
+        expenseDataCallback.onUpdateExpense(tmpArrayList);
     }
 
 
@@ -169,6 +211,21 @@ public class ExpensesAdapter extends RecyclerView.Adapter<ExpensesAdapter.MyView
 
     }
 
+    public void filter(String f){
+        filterBy = f;
+        expensesList.clear();
+
+        for (HashMap.Entry<String, Expenses.data> entry : dataMap.entrySet()) {
+            //String key = entry.getKey();
+            Expenses.data value = entry.getValue();
+            if(f.contentEquals(MainActivity.CONSTANT_ALL) || value.getCategory().equalsIgnoreCase(f)){
+                expensesList.add(value);
+            }
+        }
+
+
+        notifyDataSetChanged();
+    }
 
     public void toggleBlock(Expenses.data data) {
 

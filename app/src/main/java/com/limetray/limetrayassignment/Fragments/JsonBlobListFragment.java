@@ -119,6 +119,12 @@ public class JsonBlobListFragment extends Fragment implements ExpenseData {
 
     }
 
+    public void filter(String f){
+        if(mAdapter!=null){
+            mAdapter.filter(f);
+        }
+    }
+
     @Override
     public void onError() {
         getActivity().runOnUiThread(new Runnable() {
